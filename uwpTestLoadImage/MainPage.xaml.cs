@@ -1,8 +1,12 @@
-﻿using System;
+﻿using Microsoft.Graphics.Canvas;
+using System;
+using System.Collections.Generic;
+using Windows.Graphics.Display;
 using Windows.Graphics.Imaging;
 using Windows.Storage;
 using Windows.Storage.Pickers;
 using Windows.Storage.Streams;
+using Windows.UI;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Media.Imaging;
@@ -38,9 +42,8 @@ namespace uwpTestLoadImage
             }
 
             SoftwareBitmap softwareBitmap;
-            Image image = new Image();
 
-            using (IRandomAccessStream stream = await inputFile.OpenAsync(FileAccessMode.Read))
+            using (IRandomAccessStream stream = await inputFile.OpenAsync(FileAccessMode.ReadWrite))
             {
                 // Create the decoder from the stream
                 BitmapDecoder decoder = await BitmapDecoder.CreateAsync(stream);
@@ -57,8 +60,41 @@ namespace uwpTestLoadImage
             var source = new SoftwareBitmapSource();
             await source.SetBitmapAsync(softwareBitmap);
 
-            // Set the source of the Image control
             imageControl.Source = source;
+
+            var device = CanvasDevice.GetSharedDevice();
+            var image = default(CanvasBitmap);
+            using (var s = await inputFile.OpenReadAsync())
+            {
+                image = await CanvasBitmap.LoadAsync(device, s);
+            }
+
+            var offscreen = new CanvasRenderTarget(device, (float)image.Bounds.Width, (float)image.Bounds.Height, 96);
+            using (var ds = offscreen.CreateDrawingSession())
+            {
+                ds.DrawImage(image, 0, 0);
+                ds.DrawText("Hello note", 10, 400, Colors.Aqua);
+            }
+
+
+            var displayInformation = DisplayInformation.GetForCurrentView();
+            var savepicker = new FileSavePicker();
+            savepicker.FileTypeChoices.Add("png", new List<string> { ".png" });
+            var destFile = await savepicker.PickSaveFileAsync();
+            using (var s = await destFile.OpenAsync(FileAccessMode.ReadWrite))
+            {
+                var encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.PngEncoderId, s);
+                encoder.SetPixelData(
+                    BitmapPixelFormat.Bgra8,
+                    BitmapAlphaMode.Ignore,
+                    (uint)offscreen.Size.Width,
+                    (uint)offscreen.Size.Height,
+                    displayInformation.LogicalDpi,
+                    displayInformation.LogicalDpi,
+                    offscreen.GetPixelBytes());
+                await encoder.FlushAsync();
+            }
+
 
         }
     }

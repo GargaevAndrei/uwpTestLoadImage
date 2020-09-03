@@ -9,7 +9,7 @@
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
     <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
-        <Image x:Name="imageControl" MaxHeight="100" MaxWidth="100" Margin="200,200,200,200" />
+        <Image x:Name="imageControl" MaxHeight="500" MaxWidth="500" Margin="200,200,200,200" />
       
         <Button x:Name="loadImage"  Width="100" Height="40" Content="Load Image" Click="loadImage_Click" Margin="50,100,0,0" VerticalAlignment="Top" />
     </Grid>
